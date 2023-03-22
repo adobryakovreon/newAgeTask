@@ -6,21 +6,35 @@ const express = require("express");
 const api = require("./api");
 const logger = require("./logger");
 const config = require("./config");
-const utils = require('./utils');
+const utils = require("./utils");
+
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-api.getAccessToken().then(() => {
-	app.get("/", (req, res) => res.send("pong " + Date.now()));
+const age_field_id = 400839;
+const bd_field_id = 376795;
 
-	app.post("/hook", async (req, res) => {
-		const bd_id = 376795;
-		const custom_field = req.body.contacts.add[0].custom_fields;
-		
-		const bd_value = utils.getFieldValue(custom_field, bd_id); 
-		console.log(bd_value);
+api.getAccessToken().then(() => {
+	app.post("/create", async (req, res) => {
+		const {id} = req.body.contacts.add[0].id;
+		const custom_fields = req.body.contacts.add[0].custom_fields;
+		const birthday = utils.getFieldValue(custom_fields, bd_field_id);
+		const age_value = utils.getAge(birthday);
+		const age_field = utils.makeField(age_field_id, age_value);
+		req.body = {
+			id,
+			"custom_fields_values": [
+				age_field,
+			]
+		};
+		await api.updateContacts(req.body);
+		res.send("OK");
+	});
+
+	app.post("/update", async (req, res) => {
+		console.log(req.body);
 		res.send("OK");
 	});
 
